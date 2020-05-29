@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"log"
-	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -30,16 +29,29 @@ func (repo UsersMongoRepository) Add(user models.User) {
 	result, err := collection.InsertOne(ctx, user)
 	if err != nil && result.InsertedID == nil {
 		log.Fatal(err)
-		os.Exit(1)
 	}
 }
 
 func (repo UsersMongoRepository) Update(user models.User) {
+	collection := repo.database.Collection("Users")
+	filter := bson.D{{"id", user.Id}}
+	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
 
+	result, err := collection.UpdateOne(ctx, filter, user)
+	if err != nil && result == nil {
+		log.Fatal(err)
+	}
 }
 
 func (repo UsersMongoRepository) Remove(user models.User) {
+	collection := repo.database.Collection("Users")
+	filter := bson.D{{"id", user.Id}}
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
+	result, err := collection.DeleteOne(ctx, filter)
+	if err != nil && result == nil {
+		log.Fatal(err)
+	}
 }
 
 func (repo UsersMongoRepository) Get(id string) models.User {

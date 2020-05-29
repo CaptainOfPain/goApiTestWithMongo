@@ -2,7 +2,6 @@ package services
 
 import (
 	"github.com/beevik/guid"
-	"github.com/golobby/container"
 	"test.com/apiTest/models"
 	"test.com/apiTest/repositories"
 )
@@ -17,18 +16,14 @@ type UsersServiceImplementation struct {
 }
 
 func (service UsersServiceImplementation) AddUser(userName string, email string) {
-	var repo repositories.UsersRepository
-	container.Make(&repo)
-	service.repository = repo
-
 	user := models.CreateUser(guid.New().String(), userName, email)
 	service.repository.Add(*user)
 }
 
 func (service UsersServiceImplementation) GetUsers() []models.User {
-	var repo repositories.UsersRepository
-	container.Make(&repo)
-	service.repository = repo
-
 	return service.repository.Browse()
+}
+
+func (service *UsersServiceImplementation) AddRepository(repository repositories.UsersRepository) {
+	service.repository = repository
 }

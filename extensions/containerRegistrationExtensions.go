@@ -59,6 +59,12 @@ func RegisterRepositories() {
 
 func RegisterServices() {
 	container.Transient(func() services.UsersService {
-		return &services.UsersServiceImplementation{}
+		var repository repositories.UsersRepository
+		container.Make(&repository)
+
+		service := &services.UsersServiceImplementation{}
+		service.AddRepository(repository)
+
+		return service
 	})
 }
