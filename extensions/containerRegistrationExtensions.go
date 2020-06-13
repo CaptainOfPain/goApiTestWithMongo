@@ -47,12 +47,13 @@ func RegisterMongoDriver() {
 
 func RegisterRepositories() {
 	container.Transient(func() repositories.UsersRepository {
-		var database mongo.Database
-		container.Make(&database)
-
-		repo := &repositories.UsersMongoRepository{}
-		repo.AddDatabase(database)
-
+		repo := repositories.UsersMongoRepository{}
+		container.Make(&repo.Database)
+		return repo
+	})
+	container.Transient(func() repositories.TasksRepository {
+		repo := repositories.TasksMongoRepository{}
+		container.Make(&repo.Database)
 		return repo
 	})
 }
@@ -64,6 +65,21 @@ func RegisterServices() {
 
 		service := &services.UsersServiceImplementation{}
 		service.AddRepository(repository)
+
+		return service
+	})
+
+	container.Transient(func() services.SignInService {
+		service := &services.SignInSeviceImplementation{}
+		container.Make(&service.Config)
+		container.Make(&service.UsersRepository)
+
+		return service
+	})
+
+	container.Transient(func() services.TasksService {
+		service := &services.TasksServiceImplementation{}
+		container.Make(&service.Repository)
 
 		return service
 	})

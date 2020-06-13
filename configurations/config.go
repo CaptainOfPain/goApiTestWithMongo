@@ -4,4 +4,5 @@ package configurations
 type Configuration struct {
 	ConnectionString string
 	Database         string
+	Secret           string
 }

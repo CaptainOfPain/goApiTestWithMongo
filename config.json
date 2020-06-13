@@ -1,4 +1,5 @@
 {
     "ConnectionString": "mongodb://root:admin@localhost:27017/admin",
-    "Database": "test"
+    "Database": "test",
+    "Secret": "secret"
 }

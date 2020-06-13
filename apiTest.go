@@ -13,6 +13,7 @@ func handleRequests() {
 	router := mux.NewRouter()
 
 	controllers.ApplyUserRoutes(router)
+	controllers.ApplyTasksRoutes(router)
 
 	log.Fatal(http.ListenAndServe(":8081", router))
 }

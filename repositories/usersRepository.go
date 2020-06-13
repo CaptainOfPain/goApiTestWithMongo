@@ -14,16 +14,17 @@ type UsersRepository interface {
 	Add(user models.User)
 	Update(user models.User)
 	Remove(user models.User)
-	Get(id string) models.User
-	Browse() []models.User
+	Get(id string, c chan models.User)
+	GetByUserName(username string, c chan models.User)
+	Browse(c chan []models.User)
 }
 
 type UsersMongoRepository struct {
-	database mongo.Database
+	Database mongo.Database
 }
 
 func (repo UsersMongoRepository) Add(user models.User) {
-	collection := repo.database.Collection("Users")
+	collection := repo.Database.Collection("Users")
 
 	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
 	result, err := collection.InsertOne(ctx, user)
@@ -33,7 +34,7 @@ func (repo UsersMongoRepository) Add(user models.User) {
 }
 
 func (repo UsersMongoRepository) Update(user models.User) {
-	collection := repo.database.Collection("Users")
+	collection := repo.Database.Collection("Users")
 	filter := bson.D{{"id", user.Id}}
 	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
 
@@ -44,7 +45,7 @@ func (repo UsersMongoRepository) Update(user models.User) {
 }
 
 func (repo UsersMongoRepository) Remove(user models.User) {
-	collection := repo.database.Collection("Users")
+	collection := repo.Database.Collection("Users")
 	filter := bson.D{{"id", user.Id}}
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -54,23 +55,38 @@ func (repo UsersMongoRepository) Remove(user models.User) {
 	}
 }
 
-func (repo UsersMongoRepository) Get(id string) models.User {
-	collection := repo.database.Collection("Users")
+func (repo UsersMongoRepository) Get(id string, c chan models.User) {
+	collection := repo.Database.Collection("Users")
 	filter := bson.D{{"id", id}}
 
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
 	var result models.User
 	err := collection.FindOne(ctx, filter).Decode(&result)
-	if err == nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	return result
+	c <- result
 }
 
-func (repo UsersMongoRepository) Browse() []models.User {
-	collection := repo.database.Collection("Users")
+func (repo UsersMongoRepository) GetByUserName(username string, c chan models.User) {
+	collection := repo.Database.Collection("Users")
+	filter := bson.D{{"username", username}}
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+
+	var result models.User
+	err := collection.FindOne(ctx, filter).Decode(&result)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c <- result
+}
+
+func (repo UsersMongoRepository) Browse(c chan []models.User) {
+	collection := repo.Database.Collection("Users")
 
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -88,9 +104,9 @@ func (repo UsersMongoRepository) Browse() []models.User {
 		result = []models.User{}
 	}
 
-	return result
+	c <- result
 }
 
 func (repo *UsersMongoRepository) AddDatabase(database mongo.Database) {
-	repo.database = database
+	repo.Database = database
 }
