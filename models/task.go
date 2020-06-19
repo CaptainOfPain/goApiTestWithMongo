@@ -32,7 +32,7 @@ func CreateTask(id guid.Guid, name string, ownerUserId guid.Guid, content string
 }
 
 func (task *Task) Archive(userId guid.Guid) error {
-	if *task.AssignedUserId == userId.String() || task.OwnerUserId == userId.String() {
+	if (task.AssignedUserId != nil && *task.AssignedUserId == userId.String()) || task.OwnerUserId == userId.String() {
 		task.IsActive = false
 		return nil
 	} else {
@@ -51,6 +51,7 @@ func (task *Task) UpdateTask(name string, content string, userId guid.Guid) erro
 	} else {
 		return errors.New("Not valid user to perform this action")
 	}
+	return nil
 }
 
 func (task *Task) AssignUser(userId guid.Guid) error {
@@ -60,4 +61,5 @@ func (task *Task) AssignUser(userId guid.Guid) error {
 	} else {
 		return errors.New("Not valid user to perform this action")
 	}
+	return nil
 }

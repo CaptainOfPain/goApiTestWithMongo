@@ -12,6 +12,10 @@ import (
 	"test.com/apiTest/configurations"
 )
 
+type errorViewModel struct {
+	ErrorMessage string
+}
+
 //JsonOK respond with json message to client with OK(200) status
 func JsonOK(writer http.ResponseWriter, message interface{}) {
 	messageJSON, error := json.Marshal(message)
@@ -19,7 +23,11 @@ func JsonOK(writer http.ResponseWriter, message interface{}) {
 	writer.Header().Set("Content-Type", "application/json")
 
 	if error == nil {
-		writer.WriteHeader(http.StatusOK)
+		if message == nil {
+			writer.WriteHeader(http.StatusNoContent)
+		} else {
+			writer.WriteHeader(http.StatusOK)
+		}
 		writer.Write(messageJSON)
 	} else {
 		JsonBadRequest(writer, error.Error())
@@ -33,17 +41,18 @@ func JsonBadRequest(writer http.ResponseWriter, message interface{}) {
 }
 
 //RootHandler handles requests and errors
-type RootHandler func(http.ResponseWriter, *http.Request) error
+type RootHandler func(http.ResponseWriter, *http.Request) (interface{}, error)
 
 func (fn RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	err := fn(w, r) // Call handler function
+	result, err := fn(w, r) // Call handler function
 	if err == nil {
+		JsonOK(w, result)
 		return
 	}
 	// This is where our error handling logic starts.
 	log.Printf("An error occured: %v", err) // Log the error.
 
-	JsonBadRequest(w, err.Error)
+	JsonBadRequest(w, errorViewModel{ErrorMessage: err.Error()})
 }
 
 //AuthenticationMiddleware checks if token is valid

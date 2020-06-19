@@ -19,7 +19,7 @@ type UserSignedInDto struct {
 }
 
 type SignInService interface {
-	SignIn(username string, password string, c chan UserSignedInDto) error
+	SignIn(username string, password string) (*UserSignedInDto, error)
 }
 
 type SignInSeviceImplementation struct {
@@ -27,24 +27,22 @@ type SignInSeviceImplementation struct {
 	Config          configurations.Configuration
 }
 
-func (service *SignInSeviceImplementation) SignIn(username string, password string, c chan UserSignedInDto) error {
-	userChannel := make(chan models.User)
-	go service.UsersRepository.GetByUserName(username, userChannel)
-	user := <-userChannel
+func (service *SignInSeviceImplementation) SignIn(username string, password string) (*UserSignedInDto, error) {
+	user, err := service.UsersRepository.GetByUserName(username)
 
 	if !user.ComparePassword(password) {
-		return errors.New("invalid credentials")
+		return nil, errors.New("invalid credentials")
 	}
 
 	token, err := createJwtToken(user, service.Config.Secret)
-	c <- UserSignedInDto{
+	dto := &UserSignedInDto{
 		Email:    user.Email,
 		Id:       user.Id,
 		JwtToken: token,
 		UserName: user.UserName,
 	}
 
-	return err
+	return dto, err
 }
 
 func createJwtToken(user models.User, secret string) (string, error) {

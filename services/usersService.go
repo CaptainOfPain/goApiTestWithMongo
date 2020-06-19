@@ -7,9 +7,9 @@ import (
 )
 
 type UsersService interface {
-	AddUser(userName string, email string, password string)
-	GetUsers(c chan []models.User)
-	GetUser(id guid.Guid, c chan models.User)
+	AddUser(userName string, email string, password string) error
+	GetUsers() ([]models.User, error)
+	GetUser(id guid.Guid) (models.User, error)
 }
 
 type UsersServiceImplementation struct {
@@ -17,18 +17,18 @@ type UsersServiceImplementation struct {
 }
 
 //AddUser creates user in repository
-func (service UsersServiceImplementation) AddUser(userName string, email string, password string) {
+func (service UsersServiceImplementation) AddUser(userName string, email string, password string) error {
 	user := models.CreateUser(guid.New().String(), userName, email, password)
-	service.repository.Add(*user)
+	return service.repository.Add(*user)
 }
 
 //GetUsers get users from repository
-func (service UsersServiceImplementation) GetUsers(c chan []models.User) {
-	service.repository.Browse(c)
+func (service UsersServiceImplementation) GetUsers() ([]models.User, error) {
+	return service.repository.Browse()
 }
 
-func (service UsersServiceImplementation) GetUser(id guid.Guid, c chan models.User) {
-	service.repository.Get(id.String(), c)
+func (service UsersServiceImplementation) GetUser(id guid.Guid) (models.User, error) {
+	return service.repository.Get(id.String())
 }
 
 func (service *UsersServiceImplementation) AddRepository(repository repositories.UsersRepository) {

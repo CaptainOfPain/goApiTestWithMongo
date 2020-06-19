@@ -8,69 +8,55 @@ import (
 	"github.com/golobby/container"
 	"github.com/gorilla/mux"
 	"test.com/apiTest/helpers"
-	"test.com/apiTest/models"
 	"test.com/apiTest/services"
 	viewmodels "test.com/apiTest/viewModels"
 )
 
 //ApplyUserRoutes for router
 func ApplyUserRoutes(router *mux.Router) {
-	test := http.HandlerFunc(getUsers)
-	router.Handle("/api/users/", helpers.AuthenticationMiddleware(test)).Methods("GET")
-	router.HandleFunc("/api/users/", addUser).Methods("POST")
-	router.HandleFunc("/api/users/{userId}", getUser).Methods("GET")
-	router.HandleFunc("/api/users/signIn", signIn).Methods("POST")
+	router.Handle("/api/users/", helpers.AuthenticationMiddleware(helpers.RootHandler(getUsers))).Methods("GET")
+	router.Handle("/api/users/", helpers.RootHandler(addUser)).Methods("POST")
+	router.Handle("/api/users/{userId}", helpers.AuthenticationMiddleware(helpers.RootHandler(getUser))).Methods("GET")
+	router.Handle("/api/users/signIn/", helpers.RootHandler(signIn)).Methods("POST")
 }
 
-func getUsers(writer http.ResponseWriter, request *http.Request) {
+func getUsers(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.UsersService
 	container.Make(&service)
 
-	c := make(chan []models.User)
-	go service.GetUsers(c)
-	users := <-c
+	users, err := service.GetUsers()
 
-	helpers.JsonOK(writer, users)
+	return users, err
 }
 
-func addUser(writer http.ResponseWriter, request *http.Request) {
+func addUser(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.UsersService
 	container.Make(&service)
 
 	var viewModel viewmodels.AddUserViewModel
 	json.NewDecoder(request.Body).Decode(&viewModel)
 
-	service.AddUser(viewModel.UserName, viewModel.Email, viewModel.Password)
+	err := service.AddUser(viewModel.UserName, viewModel.Email, viewModel.Password)
 
-	helpers.JsonOK(writer, nil)
+	return nil, err
 }
 
-func getUser(writer http.ResponseWriter, request *http.Request) {
+func getUser(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.UsersService
 	container.Make(&service)
-
-	c := make(chan models.User)
 
 	vars := mux.Vars(request)
 	userId, _ := guid.ParseString(vars["userId"])
 
-	go service.GetUser(*userId, c)
-
-	result := <-c
-
-	helpers.JsonOK(writer, result)
+	return service.GetUser(*userId)
 }
 
-func signIn(writer http.ResponseWriter, request *http.Request) {
+func signIn(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.SignInService
 	container.Make(&service)
 
 	var viewModel viewmodels.SignInViewModel
 	json.NewDecoder(request.Body).Decode(&viewModel)
 
-	c := make(chan services.UserSignedInDto)
-	go service.SignIn(viewModel.UserName, viewModel.Password, c)
-
-	user := <-c
-	helpers.JsonOK(writer, viewmodels.UserSignedInViewModel{Id: user.Id, Email: user.Email, UserName: user.UserName, JwtToken: user.JwtToken})
+	return service.SignIn(viewModel.UserName, viewModel.Password)
 }

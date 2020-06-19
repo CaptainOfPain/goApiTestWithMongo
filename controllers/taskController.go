@@ -20,7 +20,7 @@ func ApplyTasksRoutes(router *mux.Router) {
 	router.Handle("/api/tasks/{taskId}", helpers.AuthenticationMiddleware(http.Handler(helpers.RootHandler(getTask)))).Methods("GET")
 }
 
-func addTask(writer http.ResponseWriter, request *http.Request) error {
+func addTask(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.TasksService
 	container.Make(&service)
 
@@ -29,24 +29,20 @@ func addTask(writer http.ResponseWriter, request *http.Request) error {
 	userId, err := guid.ParseString(request.Header.Get("userId"))
 	err = service.AddTask(*guid.New(), viewModel.Name, *userId, viewModel.Content)
 
-	if err != nil {
-		return err
-	}
-	helpers.JsonOK(writer, nil)
-	return nil
+	return nil, err
 }
 
-func getTasks(writer http.ResponseWriter, request *http.Request) error {
+func getTasks(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.TasksService
 	container.Make(&service)
 
 	userId, parserError := guid.ParseString(request.Header.Get("userId"))
 	if parserError != nil {
-		return parserError
+		return nil, parserError
 	}
 	users, err := service.GetTasks(*userId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	tasksViewModels := []viewmodels.TaskViewModel{}
 	for _, value := range users {
@@ -59,11 +55,10 @@ func getTasks(writer http.ResponseWriter, request *http.Request) error {
 			OwnerUserId:    value.OwnerUserId,
 		})
 	}
-	helpers.JsonOK(writer, tasksViewModels)
-	return nil
+	return users, err
 }
 
-func getTask(writer http.ResponseWriter, request *http.Request) error {
+func getTask(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.TasksService
 	container.Make(&service)
 
@@ -72,10 +67,10 @@ func getTask(writer http.ResponseWriter, request *http.Request) error {
 
 	task, err := service.GetTask(*taskId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	helpers.JsonOK(writer, viewmodels.TaskDetailedViewModel{
+	vm := viewmodels.TaskDetailedViewModel{
 		Id:             task.Id,
 		AssignedUserId: task.AssignedUserId,
 		Name:           task.Name,
@@ -84,17 +79,17 @@ func getTask(writer http.ResponseWriter, request *http.Request) error {
 		OwnerUserId:    task.OwnerUserId,
 		Content:        task.Content,
 		MinutesSpent:   task.MinutesSpent,
-	})
-	return err
+	}
+	return vm, err
 }
 
-func archiveTask(writer http.ResponseWriter, request *http.Request) error {
+func archiveTask(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.TasksService
 	container.Make(&service)
 
 	userId, parserError := guid.ParseString(request.Header.Get("userId"))
 	if parserError != nil {
-		return parserError
+		return nil, parserError
 	}
 
 	var viewModel viewmodels.ArchiveTaskViewModel
@@ -102,17 +97,16 @@ func archiveTask(writer http.ResponseWriter, request *http.Request) error {
 	taskId, _ := guid.ParseString(viewModel.TaskId)
 	err := service.ArchiveTask(*taskId, *userId)
 
-	helpers.JsonOK(writer, nil)
-	return err
+	return nil, err
 }
 
-func updateTask(writer http.ResponseWriter, request *http.Request) error {
+func updateTask(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.TasksService
 	container.Make(&service)
 
 	userId, parserError := guid.ParseString(request.Header.Get("userId"))
 	if parserError != nil {
-		return parserError
+		return nil, parserError
 	}
 
 	var viewModel viewmodels.UpdateTaskViewModel
@@ -120,21 +114,17 @@ func updateTask(writer http.ResponseWriter, request *http.Request) error {
 	taskId, _ := guid.ParseString(viewModel.TaskId)
 
 	err := service.UpdateTask(*taskId, viewModel.Name, viewModel.Content, *userId)
-	if err != nil {
-		return err
-	}
 
-	helpers.JsonOK(writer, nil)
-	return err
+	return nil, err
 }
 
-func assignUserToTask(writer http.ResponseWriter, request *http.Request) error {
+func assignUserToTask(writer http.ResponseWriter, request *http.Request) (interface{}, error) {
 	var service services.TasksService
 	container.Make(&service)
 
 	currentUserId, parserError := guid.ParseString(request.Header.Get("userId"))
 	if parserError != nil {
-		return parserError
+		return nil, parserError
 	}
 
 	var viewModel viewmodels.AssignUserToTaskViewModel
@@ -143,10 +133,6 @@ func assignUserToTask(writer http.ResponseWriter, request *http.Request) error {
 	userId, _ := guid.ParseString(viewModel.UserId)
 
 	err := service.AssignUserToTask(*taskId, *userId, *currentUserId)
-	if err != nil {
-		return err
-	}
 
-	helpers.JsonOK(writer, nil)
-	return err
+	return nil, err
 }

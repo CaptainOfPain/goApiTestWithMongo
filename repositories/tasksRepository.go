@@ -34,7 +34,15 @@ func (repo TasksMongoRepository) Update(task models.Task) error {
 	filter := bson.D{{"id", task.Id}}
 	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
 
-	_, err := collection.UpdateOne(ctx, filter, task)
+	_, err := collection.UpdateOne(ctx, filter, bson.D{
+		{Key: "$set", Value: bson.M{
+			"name":         task.Name,
+			"content":      task.Content,
+			"minutesspent": task.MinutesSpent,
+			"isactive":     task.IsActive,
+		},
+		},
+	})
 	return err
 }
 
